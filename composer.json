@@ -1,5 +1,8 @@
 {
     "require": {
         "guzzlehttp/guzzle": "^7.9"
+    },
+    "require-dev": {
+        "symfony/panther": "^2.2"
     }
 }

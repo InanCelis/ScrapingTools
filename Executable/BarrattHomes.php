@@ -1,14 +1,22 @@
 <?php
 require_once __DIR__ . '/../simple_html_dom.php';
+require_once __DIR__ . '/../Api/ApiSender.php';
 
 class BarrattHomes {
     private string $baseUrl = "https://www.barratthomes.co.uk";
     private array $propertyLinks = [];
     private array $scrapedData = [];
+    private int $successUpload;
 
-    public function run(int $pageCount = 1, int $limit = 0): void {
+    public function __construct() {
+        // Initialize the ApiSender with your actual API URL and token
+        $this->apiSender = new ApiSender(true);
+        $this->successUpload = 1;
+    }
+
+    public function run(array $urlsToRun = [], int $limit = 0, string $filename): void {
         $folder = __DIR__ . '/../ScrapeFile/BarrattHomes';
-        $outputFile = $folder . '/derbyshire.json';
+        $outputFile = $folder . '/'.$filename.'.json';
         // $htmlTest =  $folder . '/Test.html';
 
         // Create the folder if it doesn't exist
@@ -20,19 +28,17 @@ class BarrattHomes {
         file_put_contents($outputFile, "[");
 
         $propertyCounter = 0;
-        $pages = 0;
-        for ($page = 1; $page <= $pageCount; $page++) {0;
-            // $url = $this->baseUrl . "/properties/house-type?page={$page}&sort_by=price-desc&web_page=properties";
-            $url = $this->baseUrl . "/new-homes/east-midlands/derbyshire/";
-            
-            echo "📄 Fetching page $page: $url\n";
+        // Process each URL in the array
+        foreach ($urlsToRun as $url) {
+            $url = $this->baseUrl .$url;
+            echo "📄 Fetching URL: $url\n";
 
             $html = file_get_html($url);
             if (!$html) {
-                echo "⚠️ Failed to load page $page. Skipping...\n";
+                echo "⚠️ Failed to load URL: $url. Skipping...\n";
                 continue;
             }
-            $pages +=24;
+            
             $this->extractPropertyLinks($html);
         }
 
@@ -48,12 +54,24 @@ class BarrattHomes {
                 $this->scrapedData = []; // Clear for fresh 
                 // file_put_contents($htmlTest, $propertyHtml);
                 // return;
-                $this->scrapePropertyDetails($propertyHtml);
+                $this->scrapePropertyDetails($propertyHtml, $url);
 
                 if (!empty($this->scrapedData[0])) {
                     $jsonEntry = json_encode($this->scrapedData[0], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     file_put_contents($outputFile, ($propertyCounter > 0 ? "," : "") . "\n" . $jsonEntry, FILE_APPEND);
                     $propertyCounter++;
+
+                     // Send the property data via the ApiSender
+                    $result = $this->apiSender->sendProperty($this->scrapedData[0]);
+                    if ($result['success']) {
+                        echo "✅ Success after {$result['attempts']} attempt(s)\n Uploaded # " .$this->successUpload++. "\n";
+                    } else {
+                        echo "❌ Failed after {$result['attempts']} attempts. Last error: {$result['error']}\n";
+                        if ($result['http_code']) {
+                            echo "⚠️ HTTP Status: {$result['http_code']}\n";
+                        }
+                    }
+                    sleep(1);
                 }
             }
         }
@@ -82,16 +100,115 @@ class BarrattHomes {
             $href = $a->href ?? '';
             if (strpos($href, '/new-homes/') !== false) {
                 $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
-                $this->propertyLinks[] = $fullUrl;
+                $this->propertyLinks[] = str_replace('&#39;', "'", $fullUrl);
+            }
+        }
+        if (empty($this->propertyLinks)) {
+            $fallbackHtml = str_get_html($this->getLondonHtmlFallback());
+            
+            foreach ($fallbackHtml->find('.results__item a[href*="/new-homes/"]') as $a) {
+                $href = $a->href ?? '';
+                if (!empty($href)) {
+                    $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
+                    $this->propertyLinks[] = str_replace('&#39;', "'", $fullUrl);
+                }
             }
         }
         $this->propertyLinks = array_unique($this->propertyLinks);
     }
 
-    private function scrapePropertyDetails(simple_html_dom $html): void {
-        // $summaryDetails = $this->extractSummaryDetails($html);
+    private function getLondonHtmlFallback(): string {
+        $londonHtmlPath = __DIR__ . '/../src/barratthomes/London.html';
+        
+        if (!file_exists($londonHtmlPath)) {
+            throw new RuntimeException("London.html fallback file not found at: " . $londonHtmlPath);
+        }
+        
+        return file_get_contents($londonHtmlPath);
+    }
+    private function extractDevelopmentInfo(simple_html_dom $html): array {
+        $default = [
+            'development_id' => '',
+            'development_status' => ''
+        ];
+
+        $developmentMeta = $html->find('meta[name="development"]', 0);
+        if (!$developmentMeta || empty($developmentMeta->content)) {
+            return $default;
+        }
+
+        // Fix common JSON issues in the content
+        $content = html_entity_decode($developmentMeta->content);
+        $content = str_replace("'", '"', $content); // Replace single quotes with double quotes
+        $content = preg_replace('/(\w+):/', '"$1":', $content); // Wrap keys in quotes
+
+        try {
+            $devData = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON: ' . json_last_error_msg());
+            }
+
+            return [
+                'development_id' => strtoupper($devData['developmentID'] ?? ''),
+                'development_status' => $devData['developmentStatus'] ?? ''
+            ];
+        } catch (Exception $e) {
+            error_log("Failed to parse development meta: " . $e->getMessage());
+            return $default;
+        }
+    }
+  
+    private function scrapePropertyDetails(simple_html_dom $html, $url): void {
+        //======================================================================//
+        $ownedBy = "Barratt Homes";
+        $contactPerson = "Barratt Homes";
+        $phone = "03018173";
+        $email = "customer.care@barrattredrow.co.uk";
+        //======================================================================//
         $coords = $this->extractLatLngFromIframe($html);
 
+
+        $devInfo = $this->extractDevelopmentInfo($html);
+        $status = $devInfo['development_status'] ?? ''; // Add null coalescing operator for safety
+
+        // price
+        $price = '';
+        $bedroom = '';
+        $details = $html->find('div.marketing-header__details', 0);
+        if ($details) {
+            foreach ($details->find('li.icon-list__item') as $item) {
+                $text = html_entity_decode(trim($item->plaintext)); // decode &#163; to £
+                if (strpos($text, '£') !== false) {
+                    preg_match('/£([\d,]+)/', $text, $matches);
+                    if (isset($matches[1])) {
+                        $price = str_replace(',', '', $matches[1]); // output: 239995
+                        break;
+                    }
+                }
+                // Get bedroom
+                if (stripos($text, 'bedroom') !== false && $bedroom == '') {
+                    preg_match('/\b(\d+)/', $text, $matches);
+                    if (isset($matches[1])) {
+                        $bedroom = $matches[1]; // gets the first number
+                    }
+                }
+            }
+        }
+
+        $allowedStatuses = ['For Sale', 'Coming Soon'];
+
+        // Check if status exists and is in allowed statuses (case-insensitive)
+        if (empty($status) || !in_array(strtolower($status), array_map('strtolower', $allowedStatuses))) {
+            echo "❌ Skipping property with status: $status\n";
+            return; // Exit the function without scraping
+        }
+        if(empty($price)) {
+            echo "❌ Skipping property with no price: $price\n";
+            return; // Exit the function without scraping
+        }
+
+        echo "✅ Status OK: $status\n"; // Only reaches here if status is valid
+        
        // property_title
         $titleElement = $html->find('h1.marketing-heading', 0);  // Correct selector for h1 with h3 class
         $items_loc = $html->find('ul.breadcrumb__list li.breadcrumb__item');
@@ -136,42 +253,38 @@ class BarrattHomes {
         $plainText = trim(strip_tags($descriptionHtml));
         $translatedExcerpt = substr($plainText, 0, 300);
 
-        // price
-        $price = '';
-        $bedroom = '';
-        $details = $html->find('div.marketing-header__details', 0);
-        if ($details) {
-            foreach ($details->find('li.icon-list__item') as $item) {
-                $text = html_entity_decode(trim($item->plaintext)); // decode &#163; to £
-                if (strpos($text, '£') !== false) {
-                    preg_match('/£([\d,]+)/', $text, $matches);
-                    if (isset($matches[1])) {
-                        $price = str_replace(',', '', $matches[1]); // output: 239995
-                        break;
-                    }
-                }
-                // Get bedroom
-                if (stripos($text, 'bedroom') !== false && $bedroom == '') {
-                    preg_match('/\b(\d+)/', $text, $matches);
-                    if (isset($matches[1])) {
-                        $bedroom = $matches[1]; // gets the first number
-                    }
-                }
-            }
+        
+
+
+        $addressBlock = $html->find('div.marketing-header__address div.address', 0);
+        $property_area = $city = $state = $zip_code = $country = '';
+        $country = 'United Kingdom';
+        if ($addressBlock) {
+            $addressText = trim($addressBlock->plaintext);
+            $addressParts = array_map('trim', explode(',', $addressText));
+            
+            // Get the last 4 parts (pad with empty strings if needed)
+            $lastFour = array_slice(array_pad($addressParts, -4, ''), -4);
+            
+            // Assign components (handles cases with fewer than 4 parts)
+            $area = $lastFour[0] ?? '';
+            $city = $lastFour[1] ?? '';
+            $state = $lastFour[2] ?? '';
+            $zip_code = $lastFour[3] ?? '';
+            
+            $city = $state == 'London' ? 'London' : $city;
+            $state = $city == 'London' ? 'England' : $state;
+            // Clean UK postcode format
+            $full_address = implode(', ', array_filter([
+                $area,
+                $city,
+                $state,
+                $zip_code,
+                $country
+            ]));
         }
 
-
-        $locationBlock = $html->find('h2.location', 0);
-        $property_area = $city = $state = '';
-
-        if ($locationBlock) {
-            $locationParts = $locationBlock->find('a');
-            if (isset($locationParts[0])) $property_area = trim($locationParts[0]->plaintext);
-            if (isset($locationParts[1])) $city = trim($locationParts[1]->plaintext);
-            if (isset($locationParts[2])) $state = trim($locationParts[2]->plaintext);
-        }
-
-      
+        $listing_id = $devInfo['development_id'];
 
         // Images
         $images = [];
@@ -243,17 +356,18 @@ class BarrattHomes {
             "bedrooms" => $bedroom,
             "bathrooms" => "",
             "size" => "",
+            "size_prefix" => "",
             "property_type" => ["House"],
-            "property_status" => ["For Sale"],
-            "property_address" => $property_area.', '.$city.', '. $state.', United Kingdom',
-            "property_area" => $property_area,
+            "property_status" => [$status],
+            "property_address" => $full_address,
+            "property_area" => $area,
             "city" => $city,
             "state" => $state,
-            "country" => "United Kingdom",
-            "zip_code" => "",
+            "country" => $country,
+            "zip_code" => $zip_code,
             "latitude" => $coords['latitude'],
             "longitude" => $coords['longitude'],
-            "listing_id" => "",
+            "listing_id" => $listing_id,
             "agent_id" => "150",
             "agent_display_option" => "agent_info",
             "mls_id" => "",
@@ -267,23 +381,23 @@ class BarrattHomes {
             "confidential_info" => [
                 [
                     "fave_additional_feature_title" => "Owned by",
-                    "fave_additional_feature_value" => "Harcourts Purba Bali"
+                    "fave_additional_feature_value" => $ownedBy
                 ],
                 [
                     "fave_additional_feature_title" => "Website",
-                    "fave_additional_feature_value" => "https://harcourtspurbabali.com/"
+                    "fave_additional_feature_value" => "{$url}"
                 ],
                 [
                     "fave_additional_feature_title" => "Contact Person",
-                    "fave_additional_feature_value" => "Dicky"
+                    "fave_additional_feature_value" => $contactPerson
                 ],
                 [
                     "fave_additional_feature_title" => "Phone",
-                    "fave_additional_feature_value" => "123"
+                    "fave_additional_feature_value" => $phone
                 ],
                 [
                     "fave_additional_feature_title" => "Email",
-                    "fave_additional_feature_value" => "youremail@gmail.com"
+                    "fave_additional_feature_value" => $email
                 ]
             ]
         ];

@@ -1,15 +1,21 @@
 <?php
 require_once __DIR__ . '/../simple_html_dom.php';
+require_once __DIR__ . '/../Api/ApiSender.php';
 
 class RealEstateScraper {
     private string $baseUrl = "https://www.mexicanroofre.com";
-    private string $listUrl = "/properties/mexico/villa-type?sort_by=published_at-desc";
     private array $propertyLinks = [];
     private array $scrapedData = [];
 
+    public function __construct() {
+        // Initialize the ApiSender with your actual API URL and token
+        $this->apiSender = new ApiSender(true);
+        $this->successUpload = 1;
+    }
+
     public function run(int $pageCount = 1, int $limit = 0): void {
-        $folder = __DIR__ . '/ScrapeFile';
-        $outputFile = $folder . '/Villa02.json';
+        $folder = __DIR__ . '/../ScrapeFile/MexicanRoofre';
+        $outputFile = $folder . '/House3.json';
 
         // Create the folder if it doesn't exist
         if (!is_dir($folder)) {
@@ -21,7 +27,7 @@ class RealEstateScraper {
 
         $propertyCounter = 0;
 
-        for ($page = 1; $page <= $pageCount; $page++) {
+        for ($page = 55; $page <= $pageCount; $page++) {
             $url = $this->baseUrl . "/properties/house-type?page={$page}&sort_by=price-desc&web_page=properties";
             // $url = $this->baseUrl . "/properties/mexico/villa-type?sort_by=published_at-desc";
             
@@ -46,12 +52,25 @@ class RealEstateScraper {
             $propertyHtml = $this->getHtml($url);
             if ($propertyHtml) {
                 $this->scrapedData = []; // Clear for fresh property
-                $this->scrapePropertyDetails($propertyHtml);
+                $this->scrapePropertyDetails($propertyHtml, $url);
 
                 if (!empty($this->scrapedData[0])) {
                     $jsonEntry = json_encode($this->scrapedData[0], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     file_put_contents($outputFile, ($propertyCounter > 0 ? "," : "") . "\n" . $jsonEntry, FILE_APPEND);
                     $propertyCounter++;
+
+                    // Send the property data via the ApiSender
+                    $result = $this->apiSender->sendProperty($this->scrapedData[0]);
+                    if ($result['success']) {
+                        echo "✅ Success after {$result['attempts']} attempt(s)\n Uploaded # " .$this->successUpload++. "\n";
+                    } else {
+                        echo "❌ Failed after {$result['attempts']} attempts. Last error: {$result['error']}\n";
+                        if ($result['http_code']) {
+                            echo "⚠️ HTTP Status: {$result['http_code']}\n";
+                        }
+                    }
+                    sleep(1);
+
                 }
             }
         }
@@ -86,7 +105,15 @@ class RealEstateScraper {
         $this->propertyLinks = array_unique($this->propertyLinks);
     }
 
-    private function scrapePropertyDetails(simple_html_dom $html): void {
+    private function scrapePropertyDetails(simple_html_dom $html, $url): void {
+
+        //======================================================================//
+        $ownedBy = "Mexican Roof RE";
+        $contactPerson = "Mexican Roof RE";
+        $phone = "+52 1 55 7601 0387 / +52 1 55 4439 2517";
+        $email = "mexicanroofre@gmail.com";
+        //======================================================================//
+
         $summaryDetails = $this->extractSummaryDetails($html);
         $coords = $this->extractLatLngFromIframe($html);
 
@@ -107,8 +134,24 @@ class RealEstateScraper {
         $plainText = trim(strip_tags($descriptionHtml));
         $translatedExcerpt = $this->unofficialTranslate(substr($plainText, 0, 300));
 
+        // $priceRaw = trim($html->find('.listing-type-price', 0)->plaintext ?? '');
+        // $price = preg_replace('/[^\d]/', '', $priceRaw);
+
         $priceRaw = trim($html->find('.listing-type-price', 0)->plaintext ?? '');
-        $price = preg_replace('/[^\d]/', '', $priceRaw);
+
+        // Check if the price contains "US$" to determine if it's USD
+        if (strpos($priceRaw, 'US$') !== false) {
+            // Remove non-numeric characters, keep the digits, including commas and decimals
+            $price = preg_replace('/[^\d.]/', '', $priceRaw); // Allow decimal point
+            $currency = 'USD';
+        } else {
+            // If "US$" is not found, treat as MXN
+            $price = preg_replace('/[^\d.]/', '', $priceRaw); // Allow decimal point
+            $currency = 'MXN';
+        }
+
+        // Convert the price to a float, round it, and remove the decimal part
+        $price = round((float)$price); // Round to the nearest integer
 
         $statusRaw = trim($html->find('.listing-type', 0)->plaintext ?? '');
         $statusTranslated = $this->unofficialTranslate($statusRaw);
@@ -125,11 +168,13 @@ class RealEstateScraper {
         }
 
         $constructionSize = '';
+        $constructionSizePrefix = '';
         $mainFeatures = $html->find('#main_features ul li');
         foreach ($mainFeatures as $li) {
             if (stripos($li->innertext, 'de construcción') !== false) {
                 if (preg_match('/([\d,\.]+)\s*m²/i', $li->plaintext, $match)) {
                     $constructionSize = floatval(str_replace(',', '', $match[1]));
+                    $constructionSizePrefix = "sqm";
                 }
                 break;
             }
@@ -160,13 +205,14 @@ class RealEstateScraper {
             "property_description" => $this->translateHtmlPreservingTags($descriptionHtml),
             "property_excerpt" => $translatedExcerpt,
             "price" => $price,
-            "currency" => "USD",
+            "currency" => $currency,
             "price_postfix" => "",
             "price_prefix" => "",
             "location" => $coords['location'],
             "bedrooms" => $summaryDetails['bedrooms'],
             "bathrooms" => $summaryDetails['bathrooms'],
             "size" => $constructionSize,
+            "size_prefix" => $constructionSizePrefix,
             "property_type" => $summaryDetails['property_type'],
             "property_status" => [$status],
             "property_address" => $property_area.', '.$city.', '. $state.', Mexico',
@@ -187,7 +233,29 @@ class RealEstateScraper {
             "images" => $images,
             "property_map" => "1",
             "property_year" => "",
-            "additional_features" => $features
+            "additional_features" => $features,
+            "confidential_info" => [
+                [
+                    "fave_additional_feature_title" => "Owned by",
+                    "fave_additional_feature_value" => $ownedBy
+                ],
+                [
+                    "fave_additional_feature_title" => "Website",
+                    "fave_additional_feature_value" => "{$url}"
+                ],
+                [
+                    "fave_additional_feature_title" => "Contact Person",
+                    "fave_additional_feature_value" => $contactPerson
+                ],
+                [
+                    "fave_additional_feature_title" => "Phone",
+                    "fave_additional_feature_value" => $phone
+                ],
+                [
+                    "fave_additional_feature_title" => "Email",
+                    "fave_additional_feature_value" => $email
+                ]
+            ]
         ];
     }
 

@@ -11,11 +11,7 @@ class IdealHomePortugal {
 
     public function __construct() {
         // Initialize the ApiSender with your actual API URL and token
-        $this->apiSender = new ApiSender(
-            'https://internationalpropertyalerts.com/wp-json/houzez/v1/properties', // Replace with your actual API endpoint
-            'eyJpYXQiOjE3NTIyMjY3NjcsImV4cCI6MTc1MjMxMzE2N30='             // Replace with your actual token
-        );
-
+        $this->apiSender = new ApiSender(true);
         $this->successUpload = 1;
     }
 
@@ -139,12 +135,12 @@ class IdealHomePortugal {
         
         // Check if property type is allowed (case insensitive comparison)
         if (!in_array(strtolower($type), array_map('strtolower', $allowedTypes))) {
-            echo "Skipping property of type: $type\n";
+            echo "❌ Skipping property of type: $type\n";
             return; // Exit the function without scraping
         }
 
         if (!in_array(strtolower($status), array_map('strtolower', $allowedStatuses))) {
-            echo "Skipping property with status: $status\n";
+            echo "❌ Skipping property with status: $status\n";
             return; // Exit the function without scraping
         }
 
