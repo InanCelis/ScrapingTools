@@ -1,17 +1,23 @@
 <?php
-require_once 'Executable/RealEstateScraper.php';
-// require_once 'Executable/BarrattHomes.php';
-// require_once 'Executable/IdealHomePortugal.php';
 
+########################################################
+
+## PH GREAT
+// require_once 'Executable/PHGreateScraper.php';
 // $scraper = new PHGreatScraper();
-// $scraper->run(2); // You can increase the number of listings scraped
+// $scraper->run(2); // You can increase the number of listings 
 
+#########################################################
 
-//Ideal Homes Portugal
+## Ideal Homes Portugal
+// require_once 'Executable/IdealHomePortugal.php';
 // $scraper = new IdealHomePortugal();
 // $scraper->run(1);
 
-//Ideal Homes Portugal
+#########################################################
+
+##  BARRATS HOMES
+// require_once 'Executable/BarrattHomes.php';
 // $scraper = new BarrattHomes();
 
 // $eastMidlands = [
@@ -30,6 +36,25 @@ require_once 'Executable/RealEstateScraper.php';
 // $scraper->run($london, 2, $filename
 // ); // Optional limit
 
+#########################################################
 
-$scraper = new RealEstateScraper();
-$scraper->run(70);
+## MEXICAN ROOF
+//require_once 'Executable/RealEstateScraper.php';
+// $scraper = new RealEstateScraper();
+// $scraper->run(70);
+
+#########################################################
+
+## BLUESKY HOMES
+// require_once 'Executable/BlueskyHouses.php';
+// $scraper = new BlueskyHouses();
+// $scraper->run(94);
+
+#########################################################
+
+## MRESIDENCE
+// require_once 'Executable/MResidence.php';
+// $scraper = new MResidence();
+// $scraper->run(94);
+
+#########################################################

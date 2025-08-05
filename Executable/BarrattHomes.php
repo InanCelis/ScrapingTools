@@ -215,7 +215,7 @@ class BarrattHomes {
         $items_loc_text = " in ".trim($items_loc[count($items_loc) - 2]->find('.breadcrumb__item-link', 0)->plaintext);
         $title = $titleElement ? trim($titleElement->plaintext).$items_loc_text : 'No title found';
 
-        //property_description
+        //property_description 
         $descriptionHtml = '';
         $infoBlock = $html->find('div.marketing-copy__content', 0);
         if ($infoBlock) {
