@@ -1,0 +1,19 @@
+{
+  "name": "mresidence-scraper",
+  "version": "1.0.0",
+  "description": "Puppeteer scraper for MResidence property listings",
+  "main": "puppeteer-scraper.js",
+  "scripts": {
+    "test": "node puppeteer-scraper.js https://mresidence.com/properties/buy?sort=Most%20Recent%20Entries&types=house&min-price=300000&max-price=6000000&page=1"
+  },
+  "dependencies": {
+    "puppeteer": "^24.15.0"
+  },
+  "keywords": [
+    "scraping",
+    "puppeteer",
+    "real-estate"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

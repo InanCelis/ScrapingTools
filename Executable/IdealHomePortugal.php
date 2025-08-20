@@ -152,7 +152,7 @@ class IdealHomePortugal {
         $email = "info@idealhomesportugal.com";
 
         $coords = $this->extractLatLong($propertyListing);
-        // title
+        // title 
         $title = $propertyListing['title'] ?? '';
 
         //description

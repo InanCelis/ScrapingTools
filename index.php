@@ -55,6 +55,35 @@
 ## MRESIDENCE
 // require_once 'Executable/MResidence.php';
 // $scraper = new MResidence();
-// $scraper->run(94);
+// $scraper->run();
+
+#########################################################
+
+## Marbella Realty Group
+// require_once 'Executable/MarbellaRealtyGroup.php';
+// $scraper = new MarbellaRealtyGroup();
+// $scraper->run(13);
+
+#########################################################
+
+## MYBALI
+// require_once 'Executable/MyBali.php';
+// $scraper = new MyBali();
+// $scraper->run(4);
+
+#########################################################
+
+## DAR GLOBAL
+require_once 'Executable/DarGlobal.php';
+$scraper = new DarGlobal();
+$scraper->run(1);
+
+#########################################################
+
+
+## AL Sabr
+// require_once 'Executable/AlSabr.php';
+// $scraper = new AlSabr();
+// $scraper->run(1);
 
 #########################################################
