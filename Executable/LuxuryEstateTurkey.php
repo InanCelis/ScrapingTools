@@ -6,7 +6,7 @@ require_once __DIR__ . '/../Helpers/ScraperHelpers.php';
 class LuxuryEstateTurkey {
     private string $baseUrl = "https://luxuryestateturkey.com";
     private string $foldername = "LuxuryEstateTurkey";
-    private string $filename = "Properties4.json";
+    private string $filename = "Restored.json";
     private array $propertyLinks = [];
     private array $scrapedData = [];
     private ApiSender $apiSender;
@@ -41,7 +41,7 @@ class LuxuryEstateTurkey {
         file_put_contents($outputFile, "[");
 
         $propertyCounter = 0;
-        for ($page = 66; $page <= $pageCount; $page++) {
+        for ($page = 0; $page <= $pageCount; $page++) {
             $url = $this->baseUrl . "/en/real-estate/turkey?building_type%5B0%5D=1&building_type%5B1%5D=3&building_type%5B2%5D=4&building_type%5B3%5D=7&building_type%5B4%5D=8&building_type%5B5%5D=9&order=from_expensive_to_cheap&p={$page}";
             
             echo "📄 Fetching page $page: $url\n";
@@ -129,16 +129,27 @@ class LuxuryEstateTurkey {
             // return;
         }
 
-        foreach ($html->find('.card.bg-transparent.border-0 .row .col-lg-12 a.h3.fs-3') as $a) {
-            $href = $a->href ?? '';
-            if (strpos($href, '/en/real-estate/') !== false) {
-                $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
-                $locationElement = $a->find('.h3.fs-3', 0);
-                $locationText = $locationElement ? trim($locationElement->plaintext) : '';
-                $this->propertyLinks[] = $fullUrl;
-            }
+        // foreach ($html->find('.card.bg-transparent.border-0 .row .col-lg-12 a.h3.fs-3') as $a) {
+        //     $href = $a->href ?? '';
+        //     if (strpos($href, '/en/real-estate/') !== false) {
+        //         $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
+        //         $locationElement = $a->find('.h3.fs-3', 0);
+        //         $locationText = $locationElement ? trim($locationElement->plaintext) : '';
+        //         $this->propertyLinks[] = $fullUrl;
+        //     }
+        // }
+        // $this->propertyLinks = array_unique($this->propertyLinks);
+
+        $result = $this->apiSender->getPropertyLinks("Luxury Estate Turkey", 0, 10);
+    
+        if ($result['success']) {
+            $this->propertyLinks = array_unique($result["links"]);
+            echo "🔗 Retrieved " . count($this->propertyLinks) . " property links from API\n";
+        } else {
+            echo "❌ Failed to get property links: " . $result['error'] . "\n";
+            echo "⚠️ Falling back to original scraping method if needed\n";
+            $this->propertyLinks = []; // Initialize as empty array
         }
-        $this->propertyLinks = array_unique($this->propertyLinks);
     }
 
    

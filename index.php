@@ -55,7 +55,7 @@ require_once 'vendor/autoload.php';
 ## MRESIDENCE
 require_once 'Executable/MResidence.php';
 $scraper = new MResidence();
-$scraper->run(10);
+$scraper->run();
 
 #########################################################
 

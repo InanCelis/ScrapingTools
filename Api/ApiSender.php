@@ -11,6 +11,7 @@ class ApiSender {
 
     public function __construct(bool $debug = false) {
         $this->apiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/properties';
+        $this->linksApiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/links-by-owner';
         $this->token = 'eyJpYXQiOjE3NTY5NTMwMjcsImV4cCI6MTc1NzAzOTQyN30=';
         $this->maxRetries = 5;            // Increased to 5 retry attempts
         $this->timeout = 120;             // 2 minute timeout for complete operation
@@ -99,6 +100,209 @@ class ApiSender {
             'last_response' => $lastResponse,
             'http_code' => $httpCode ?? null
         ];
+    }
+
+
+     /**
+     * Get property links from the API for a specific owner
+     * @param string $owner The owner name to search for
+     * @return array Array containing success status and links data
+     */
+    // public function getPropertyLinks(string $owner): array {
+    //     try {
+    //         $this->log("Fetching property links for owner: $owner");
+            
+    //         // Make API request to get property links (no token needed)
+    //         $ch = curl_init();
+    //         curl_setopt_array($ch, [
+    //             CURLOPT_URL => $this->linksApiUrl . '?owner=' . urlencode($owner),
+    //             CURLOPT_RETURNTRANSFER => true,
+    //             CURLOPT_HTTPHEADER => [
+    //                 'Content-Type: application/json'
+    //             ],
+    //             CURLOPT_TIMEOUT => 30,
+    //             CURLOPT_SSL_VERIFYPEER => false,
+    //             CURLOPT_SSL_VERIFYHOST => false
+    //         ]);
+
+    //         $startTime = microtime(true);
+    //         $response = curl_exec($ch);
+    //         $duration = round(microtime(true) - $startTime, 2);
+    //         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    //         $error = curl_error($ch);
+    //         curl_close($ch);
+
+    //         if ($error) {
+    //             $this->log("❌ CURL Error: $error");
+    //             return [
+    //                 'success' => false,
+    //                 'error' => "CURL Error: $error",
+    //                 'links' => [],
+    //                 'count' => 0
+    //             ];
+    //         }
+
+    //         if ($httpCode === 200) {
+    //             $data = json_decode($response, true);
+                
+    //             if ($data && isset($data['links']) && is_array($data['links'])) {
+    //                 $this->log("✅ Retrieved " . count($data['links']) . " property links in {$duration}s");
+    //                 $this->log("📊 API returned {$data['count']} total links for owner: $owner");
+                    
+    //                 return [
+    //                     'success' => true,
+    //                     'links' => $data['links'],
+    //                     'count' => $data['count'],
+    //                     'duration' => $duration
+    //                 ];
+    //             } else {
+    //                 $this->log("❌ API response format unexpected");
+    //                 if ($this->debug) {
+    //                     $this->log("Response: " . substr($response, 0, 200));
+    //                 }
+    //                 return [
+    //                     'success' => false,
+    //                     'error' => 'Invalid API response format',
+    //                     'links' => [],
+    //                     'count' => 0,
+    //                     'raw_response' => $response
+    //                 ];
+    //             }
+    //         } else {
+    //             $this->log("❌ API request failed with HTTP code: $httpCode");
+    //             if ($this->debug) {
+    //                 $this->log("Response: " . substr($response, 0, 200));
+    //             }
+    //             return [
+    //                 'success' => false,
+    //                 'error' => "HTTP $httpCode",
+    //                 'links' => [],
+    //                 'count' => 0,
+    //                 'http_code' => $httpCode,
+    //                 'raw_response' => $response
+    //             ];
+    //         }
+
+    //     } catch (Exception $e) {
+    //         $this->log("❌ Exception while fetching links from API: " . $e->getMessage());
+    //         return [
+    //             'success' => false,
+    //             'error' => $e->getMessage(),
+    //             'links' => [],
+    //             'count' => 0
+    //         ];
+    //     }
+    // }
+
+
+    public function getPropertyLinks(string $owner, ?int $start = null, ?int $end = null): array {
+        try {
+            $logMessage = "Fetching property links for owner: $owner";
+            if ($start !== null && $end !== null) {
+                $logMessage .= " (range: $start to $end)";
+            }
+            $this->log($logMessage);
+            
+            // Build URL with parameters
+            $url = $this->linksApiUrl . '?owner=' . urlencode($owner);
+            if ($start !== null) {
+                $url .= '&start=' . $start;
+            }
+            if ($end !== null) {
+                $url .= '&end=' . $end;
+            }
+            
+            // Make API request to get property links (no token needed)
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false
+            ]);
+
+            $startTime = microtime(true);
+            $response = curl_exec($ch);
+            $duration = round(microtime(true) - $startTime, 2);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($error) {
+                $this->log("CURL Error: $error");
+                return [
+                    'success' => false,
+                    'error' => "CURL Error: $error",
+                    'links' => [],
+                    'count' => 0
+                ];
+            }
+
+            if ($httpCode === 200) {
+                $data = json_decode($response, true);
+                
+                if ($data && isset($data['links']) && is_array($data['links'])) {
+                    $totalCount = $data['count'] ?? count($data['links']);
+                    $returnedCount = count($data['links']);
+                    
+                    $logMessage = "Retrieved $returnedCount";
+                    if ($start !== null && $end !== null) {
+                        $logMessage .= " of " . ($data['pagination']['total_count'] ?? 'unknown') . " total";
+                    }
+                    $logMessage .= " property links in {$duration}s";
+                    $this->log($logMessage);
+                    
+                    return [
+                        'success' => true,
+                        'links' => $data['links'],
+                        'count' => $returnedCount,
+                        'total_count' => $data['pagination']['total_count'] ?? $totalCount,
+                        'pagination' => $data['pagination'] ?? null,
+                        'start' => $start,
+                        'end' => $end,
+                        'duration' => $duration
+                    ];
+                } else {
+                    $this->log("API response format unexpected");
+                    if ($this->debug) {
+                        $this->log("Response: " . substr($response, 0, 200));
+                    }
+                    return [
+                        'success' => false,
+                        'error' => 'Invalid API response format',
+                        'links' => [],
+                        'count' => 0,
+                        'raw_response' => $response
+                    ];
+                }
+            } else {
+                $this->log("API request failed with HTTP code: $httpCode");
+                if ($this->debug) {
+                    $this->log("Response: " . substr($response, 0, 200));
+                }
+                return [
+                    'success' => false,
+                    'error' => "HTTP $httpCode",
+                    'links' => [],
+                    'count' => 0,
+                    'http_code' => $httpCode,
+                    'raw_response' => $response
+                ];
+            }
+
+        } catch (Exception $e) {
+            $this->log("Exception while fetching links from API: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'links' => [],
+                'count' => 0
+            ];
+        }
     }
 
     private function log(string $message): void {

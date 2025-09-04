@@ -66,20 +66,20 @@ class MResidence {
 
                     // Send the property data via the ApiSender
                     $result = $this->apiSender->sendProperty($this->scrapedData[0]);
-                    // if ($result['success']) {
-                    //     echo "✅ Success after {$result['attempts']} attempt(s)\n";
-                    //     if (count($result['response']['updated_properties']) > 0) {
-                    //         echo "✅ Updated # " . $this->successUpdated++ . "\n";
-                    //     } else {
-                    //         echo "✅ Created # " . $this->successCreated++ . "\n";
-                    //     }
-                    // } else {
-                    //     echo "❌ Failed after {$result['attempts']} attempts. Last error: {$result['error']}\n";
-                    //     if ($result['http_code']) {
-                    //         echo "⚠️ HTTP Status: {$result['http_code']}\n";
-                    //     }
-                    // }
-                    // sleep(1);
+                    if ($result['success']) {
+                        echo "✅ Success after {$result['attempts']} attempt(s)\n";
+                        if (count($result['response']['updated_properties']) > 0) {
+                            echo "✅ Updated # " . $this->successUpdated++ . "\n";
+                        } else {
+                            echo "✅ Created # " . $this->successCreated++ . "\n";
+                        }
+                    } else {
+                        echo "❌ Failed after {$result['attempts']} attempts. Last error: {$result['error']}\n";
+                        if ($result['http_code']) {
+                            echo "⚠️ HTTP Status: {$result['http_code']}\n";
+                        }
+                    }
+                    sleep(1);
                 }
             }
         }
@@ -225,18 +225,30 @@ class MResidence {
     
     private function extractPropertyLinks(simple_html_dom $html): void {
         // Find all property items using the correct selector
-        $propertyItems = $html->find('app-property-item a[href*="/properties/"]');
+        // $propertyItems = $html->find('app-property-item a[href*="/properties/"]');
         
-        foreach ($propertyItems as $a) {
-            $href = $a->href ?? '';
-            if (strpos($href, '/properties/') !== false) {
-                $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . ltrim($href, '/');
-                $this->propertyLinks[] = $fullUrl;
-            }
+        // foreach ($propertyItems as $a) {
+        //     $href = $a->href ?? '';
+        //     if (strpos($href, '/properties/') !== false) {
+        //         $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . ltrim($href, '/');
+        //         $this->propertyLinks[] = $fullUrl;
+        //     }
+        // }
+        
+        // $this->propertyLinks = array_unique($this->propertyLinks);
+        // echo "🔗 Found " . count($this->propertyLinks) . " property links\n";
+
+
+        $result = $this->apiSender->getPropertyLinks("M. Residence", 0, 100);
+    
+        if ($result['success']) {
+            $this->propertyLinks = array_unique($result["links"]);
+            echo "🔗 Retrieved " . count($this->propertyLinks) . " property links from API\n";
+        } else {
+            echo "❌ Failed to get property links: " . $result['error'] . "\n";
+            echo "⚠️ Falling back to original scraping method if needed\n";
+            $this->propertyLinks = []; // Initialize as empty array
         }
-        
-        $this->propertyLinks = array_unique($this->propertyLinks);
-        echo "🔗 Found " . count($this->propertyLinks) . " property links\n";
     }
 
     private function scrapePropertyDetails(simple_html_dom $html, $url): void {
