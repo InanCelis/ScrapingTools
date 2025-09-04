@@ -53,9 +53,9 @@ require_once 'vendor/autoload.php';
 #########################################################
 
 ## MRESIDENCE
-require_once 'Executable/MResidence.php';
-$scraper = new MResidence();
-$scraper->run();
+// require_once 'Executable/MResidence.php';
+// $scraper = new MResidence();
+// $scraper->run();
 
 #########################################################
 
@@ -88,8 +88,8 @@ $scraper->run();
 #########################################################
 
 ## Luxury Estate Turkey
-// require_once 'Executable/LuxuryEstateTurkey.php';
-// $scraper = new LuxuryEstateTurkey();
-// $scraper->run(75);
+require_once 'Executable/LuxuryEstateTurkey.php';
+$scraper = new LuxuryEstateTurkey();
+$scraper->run();
 
 #########################################################
