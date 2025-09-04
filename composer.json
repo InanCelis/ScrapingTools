@@ -1,6 +1,7 @@
 {
     "require": {
-        "guzzlehttp/guzzle": "^7.9"
+        "guzzlehttp/guzzle": "^7.9",
+        "facebook/webdriver": "*"
     },
     "require-dev": {
         "symfony/panther": "^2.2"

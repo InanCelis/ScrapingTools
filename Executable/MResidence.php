@@ -19,7 +19,7 @@ class MResidence {
 
     public function run(int $pageCount = 1, int $limit = 0): void {
         $folder = __DIR__ . '/../ScrapeFile/MResidence';
-        $outputFile = $folder . '/Apartment.json';
+        $outputFile = $folder . '/RestoreVersion.json';
         // $htmlTest =  $folder . '/Test.html';
         // Create the folder if it doesn't exist
         if (!is_dir($folder)) {
@@ -66,20 +66,20 @@ class MResidence {
 
                     // Send the property data via the ApiSender
                     $result = $this->apiSender->sendProperty($this->scrapedData[0]);
-                    if ($result['success']) {
-                        echo "✅ Success after {$result['attempts']} attempt(s)\n";
-                        if (count($result['response']['updated_properties']) > 0) {
-                            echo "✅ Updated # " . $this->successUpdated++ . "\n";
-                        } else {
-                            echo "✅ Created # " . $this->successCreated++ . "\n";
-                        }
-                    } else {
-                        echo "❌ Failed after {$result['attempts']} attempts. Last error: {$result['error']}\n";
-                        if ($result['http_code']) {
-                            echo "⚠️ HTTP Status: {$result['http_code']}\n";
-                        }
-                    }
-                    sleep(1);
+                    // if ($result['success']) {
+                    //     echo "✅ Success after {$result['attempts']} attempt(s)\n";
+                    //     if (count($result['response']['updated_properties']) > 0) {
+                    //         echo "✅ Updated # " . $this->successUpdated++ . "\n";
+                    //     } else {
+                    //         echo "✅ Created # " . $this->successCreated++ . "\n";
+                    //     }
+                    // } else {
+                    //     echo "❌ Failed after {$result['attempts']} attempts. Last error: {$result['error']}\n";
+                    //     if ($result['http_code']) {
+                    //         echo "⚠️ HTTP Status: {$result['http_code']}\n";
+                    //     }
+                    // }
+                    // sleep(1);
                 }
             }
         }

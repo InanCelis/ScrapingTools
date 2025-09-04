@@ -1,5 +1,5 @@
 <?php
-
+require_once 'vendor/autoload.php';
 ########################################################
 
 ## PH GREAT
@@ -53,16 +53,16 @@
 #########################################################
 
 ## MRESIDENCE
-// require_once 'Executable/MResidence.php';
-// $scraper = new MResidence();
-// $scraper->run();
+require_once 'Executable/MResidence.php';
+$scraper = new MResidence();
+$scraper->run(10);
 
 #########################################################
 
 ## Marbella Realty Group
 // require_once 'Executable/MarbellaRealtyGroup.php';
 // $scraper = new MarbellaRealtyGroup();
-// $scraper->run(13);
+// $scraper->run(2);
 
 #########################################################
 
@@ -74,16 +74,22 @@
 #########################################################
 
 ## DAR GLOBAL
-require_once 'Executable/DarGlobal.php';
-$scraper = new DarGlobal();
-$scraper->run(1);
+// require_once 'Executable/DarGlobal.php';
+// $scraper = new DarGlobal();
+// $scraper->run(1);
 
 #########################################################
-
 
 ## AL Sabr
 // require_once 'Executable/AlSabr.php';
 // $scraper = new AlSabr();
 // $scraper->run(1);
+
+#########################################################
+
+## Luxury Estate Turkey
+// require_once 'Executable/LuxuryEstateTurkey.php';
+// $scraper = new LuxuryEstateTurkey();
+// $scraper->run(75);
 
 #########################################################

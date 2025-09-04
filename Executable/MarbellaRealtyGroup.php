@@ -19,7 +19,7 @@ class MarbellaRealtyGroup {
 
     public function run(int $pageCount = 1, int $limit = 0): void {
         $folder = __DIR__ . '/../ScrapeFile/MarbellaRealtyGroup';
-        $outputFile = $folder . '/NewDevHouse.json';
+        $outputFile = $folder . '/ApartmentLtoHStart50k.json';
         // $htmlTest =  $folder . '/Test.html';
         // Create the folder if it doesn't exist
         if (!is_dir($folder)) {
@@ -30,8 +30,8 @@ class MarbellaRealtyGroup {
         file_put_contents($outputFile, "[");
 
         $propertyCounter = 0;
-        for ($page = 7; $page <= $pageCount; $page++) {
-            $url = $this->baseUrl . "/new-developments/?il_page={$page}&listing_type=development&type%5B0%5D=1&type%5B1%5D=7&type%5B2%5D=2&type%5B3%5D=8&type%5B4%5D=3&type%5B5%5D=5&type%5B6%5D=6&type%5B7%5D=4&bedrooms_min&bathrooms_min&list_price_min&list_price_max&ref_no";
+        for ($page = 1; $page <= $pageCount; $page++) {
+            $url = $this->baseUrl . "/property-for-sale/?il_page={$page}&listing_type=resale&type%5B0%5D=1&type%5B1%5D=7&type%5B2%5D=2&type%5B3%5D=8&type%5B4%5D=3&type%5B5%5D=5&type%5B6%5D=6&type%5B7%5D=4&bedrooms_min&bathrooms_min&list_price_min=50000&list_price_max=150000&ref_no&order=list_price_asc";
             
             echo "📄 Fetching page $page: $url\n";
 
@@ -274,7 +274,7 @@ class MarbellaRealtyGroup {
                 $type = trim(strip_tags($propertyElements[$i + 1]->innertext));
                 if($type) {
                     echo $type.'\n';
-                    $type_arr = ['Apartment', 'New Development'];
+                    $type_arr = ['Apartment'];
                 }
                 break;
             }

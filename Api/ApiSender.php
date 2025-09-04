@@ -11,7 +11,7 @@ class ApiSender {
 
     public function __construct(bool $debug = false) {
         $this->apiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/properties';
-        $this->token = 'eyJpYXQiOjE3NTU1ODcwMjAsImV4cCI6MTc1NTY3MzQyMH0=';
+        $this->token = 'eyJpYXQiOjE3NTY5NTMwMjcsImV4cCI6MTc1NzAzOTQyN30=';
         $this->maxRetries = 5;            // Increased to 5 retry attempts
         $this->timeout = 120;             // 2 minute timeout for complete operation
         $this->connectTimeout = 30;       // 30 second connection timeout

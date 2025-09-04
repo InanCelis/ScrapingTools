@@ -17,7 +17,7 @@ class IdealHomePortugal {
 
     public function run(int $pageCount = 1, int $limit = 0): void {
         $folder = __DIR__ . '/../ScrapeFile/IdealHome';
-        $outputFile = $folder . '/Algarve.json';
+        $outputFile = $folder . '/Algarve1.json';
         // $htmlTest =  $folder . '/Test.html';
 
         // Create the folder if it doesn't exist

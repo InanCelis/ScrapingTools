@@ -107,18 +107,56 @@ class ScraperHelpers {
         return null;
     }
 
+    // private function locationDetails($result) {
+    //     return [
+    //         'location' => (string)$result['latitude'] . ', '.(string)$result['longitude'],
+    //         'latitude' => (string)$result['latitude'],
+    //         'longitude' => (string)$result['longitude'],
+    //         'formatted_address' => $result['label'],
+    //         'address' => (!empty($result['locality']) || $result['locality'] == null) 
+    //         ? (!empty($result['locality']) || $result['locality'] != null ) ? (string)$result['locality'] : (string)$result['county']  . ', ' . (string)$result['country']
+    //         : (string)$result['region'] . ', ' . (string)$result['country'],
+    //         'city' => (!empty($result['locality']) || $result['locality'] != null ) ? (string)$result['locality'] : (string)$result['county'],
+    //         'state' => (string)$result['region'],
+    //         'country' => (string)$result['country'],
+    //         'postal_code' => (string)$result['postal_code'],
+    //     ];
+    // }
+
+
     private function locationDetails($result) {
+        // Get individual components
+        $city = !empty($result['locality']) ? (string)$result['locality'] : (string)$result['county'];
+        $state = (string)$result['region'];
+        $country = (string)$result['country'];
+        
+        // Build address array with non-empty components
+        $addressParts = [];
+        
+        if (!empty($city)) {
+            $addressParts[] = $city;
+        }
+        
+        if (!empty($state)) {
+            $addressParts[] = $state;
+        }
+        
+        if (!empty($country)) {
+            $addressParts[] = $country;
+        }
+        
+        // Join with commas
+        $address = implode(', ', $addressParts);
+        
         return [
-            'location' => (string)$result['latitude'] . ', '.(string)$result['longitude'],
+            'location' => (string)$result['latitude'] . ', ' . (string)$result['longitude'],
             'latitude' => (string)$result['latitude'],
             'longitude' => (string)$result['longitude'],
-            'formatted_address' => $result['label'],
-            'address' => !empty($result['locality']) 
-            ? (string)$result['locality'] . ', ' . (string)$result['country']
-            : (string)$result['region'] . ', ' . (string)$result['country'],
-            'city' => (string)$result['locality'],
-            'state' => (string)$result['region'],
-            'country' => (string)$result['country'],
+            'formatted_address' => (string)$result['label'],
+            'address' => $address,
+            'city' => $city,
+            'state' => $state,
+            'country' => $country,
             'postal_code' => (string)$result['postal_code'],
         ];
     }
@@ -132,5 +170,133 @@ class ScraperHelpers {
         }, $html);
 
         return preg_replace('/^<div>|<\/div>$/', '', $translated);
+    }
+
+
+    public function getHtmlWithJS(string $url): ?simple_html_dom {
+        $tempFile = tempnam(sys_get_temp_dir(), 'scraped_html_');
+        
+        // Updated path to your puppeteer script in Helpers/js folder
+        $puppeteerScript = __DIR__ . '/js/puppeteer-scraper.js';
+        
+        // Check if the puppeteer script exists
+        if (!file_exists($puppeteerScript)) {
+            echo "❌ Puppeteer script not found at: $puppeteerScript\n";
+            echo "💡 Make sure you've created the file and installed puppeteer in Helpers/js/\n";
+            return null;
+        }
+        
+        // Check if node is available
+        exec('node --version 2>&1', $nodeCheck, $nodeReturnCode);
+        if ($nodeReturnCode !== 0) {
+            echo "❌ Node.js not found. Please install Node.js first.\n";
+            return null;
+        }
+        
+        $helperJsDir = dirname($puppeteerScript);
+        
+        // Execute Puppeteer script with proper escaping
+        if (PHP_OS_FAMILY === 'Windows') {
+            $command = sprintf(
+                'cd /d "%s" && node "%s" "%s" "%s" 2>&1',
+                $helperJsDir,
+                basename($puppeteerScript),
+                $url,
+                $tempFile
+            );
+        } else {
+            $command = sprintf(
+                'cd %s && node %s %s %s 2>&1',
+                escapeshellarg($helperJsDir),
+                escapeshellarg(basename($puppeteerScript)),
+                escapeshellarg($url),
+                escapeshellarg($tempFile)
+            );
+        }
+        
+        echo "🚀 Executing: $command\n";
+        
+        exec($command, $output, $returnCode);
+        
+        if ($returnCode !== 0) {
+            echo "❌ Puppeteer failed with return code $returnCode\n";
+            echo "❌ Output: " . implode("\n", $output) . "\n";
+            
+            // Try to use fallback cURL method
+            echo "🔄 Trying fallback cURL method...\n";
+            return $this->getHtml($url);
+        }
+        
+        if (!file_exists($tempFile)) {
+            echo "❌ HTML file not created at: $tempFile\n";
+            echo "🔄 Trying fallback cURL method...\n";
+            return $this->getHtml($url);
+        }
+        
+        $html = file_get_contents($tempFile);
+        unlink($tempFile); // Clean up temp file
+        
+        if (!$html) {
+            echo "❌ Failed to read HTML content\n";
+            echo "🔄 Trying fallback cURL method...\n";
+            return $this->getHtml($url);
+        }
+        
+        echo "✅ Successfully got HTML content (" . strlen($html) . " characters)\n";
+        
+        // Use DOMDocument instead of simple_html_dom for large HTML
+        libxml_use_internal_errors(true);
+        $dom = new DOMDocument();
+        $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        
+        // Convert DOMDocument to simple_html_dom compatible format
+        $cleanHtml = $dom->saveHTML();
+        
+        // Now try with simple_html_dom
+        $simpleDom = str_get_html($cleanHtml);
+        
+        if (!$simpleDom) {
+            echo "❌ Still failed to parse with simple_html_dom, trying alternative approach\n";
+            
+            // Save the HTML to a temporary file and load it
+            $tempHtmlFile = tempnam(sys_get_temp_dir(), 'html_');
+            file_put_contents($tempHtmlFile, $cleanHtml);
+            $simpleDom = file_get_html($tempHtmlFile);
+            unlink($tempHtmlFile);
+            
+            if (!$simpleDom) {
+                echo "❌ All parsing methods failed\n";
+                return null;
+            }
+        }
+        
+        echo "✅ Successfully parsed HTML\n";
+        return $simpleDom;
+    }
+
+
+    private static $usedIds = [];
+    public static function generateReferenceId() {
+        $characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $maxAttempts = 100; // Prevent infinite loops
+        
+        do {
+            $referenceId = '';
+            for ($i = 0; $i < 6; $i++) {
+                $referenceId .= $characters[random_int(0, strlen($characters) - 1)];
+            }
+            $maxAttempts--;
+        } while (in_array($referenceId, self::$usedIds) && $maxAttempts > 0);
+        
+        if ($maxAttempts <= 0) {
+            throw new Exception("Unable to generate unique reference ID");
+        }
+        
+        self::$usedIds[] = $referenceId;
+        return $referenceId;
+    }
+    
+    public static function reset() {
+        self::$usedIds = [];
     }
 }

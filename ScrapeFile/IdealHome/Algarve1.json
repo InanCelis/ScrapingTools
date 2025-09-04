@@ -1,0 +1,84 @@
+[
+{
+    "property_title": "Top floor T0  with sea view in the center of Cabanas.",
+    "property_description": "<p>Top floor T-0 apartment in the heart of Cabanas and 150 meters from the sea and promenade, with a unique roof terrace with 66m2 with sea views and 360&ordm; views<br /><br />Nestled in the heart of the charming and vibrant Cabanas de Tavira, this exquisite apartment offers a unique opportunity to experience the best of coastal living. With a prime location just a short walk from the stunning Praia de Cabanas, this property is a true gem awaiting its new owners.</p><p>Step inside this cozy apartment, where you'll find a well-maintained space boasting a bright and airy atmosphere. The open-plan layout seamlessly connects the living area to the fully furnished kitchen, creating a perfect space for relaxation and entertaining. With 3 terraces one facing North, one facing South and&nbsp; and a roof terrace whit 66m2 offering panoramic views of the village and sea.<br /><br />The apartment features one bathroom and a spacious house area of 35,96, perfect for a comfortable and stylish lifestyle. With a convenient location near a plethora of dining options, from the renowned Estrela do Mar to the inviting Wine House Tapas Bar, you'll never be far from delicious meals and delightful experiences.</p>",
+    "property_excerpt": "Top floor T-0 apartment in the heart of Cabanas and 150 meters from the sea and promenade, with a unique roof terrace with 66m2 with sea views and 360&ordm; viewsNestled in the heart of the charming and vibrant Cabanas de Tavira, this exquisite apartment offers a unique opportunity to experience the",
+    "price": 255000,
+    "currency": "EUR",
+    "price_postfix": "",
+    "price_prefix": "",
+    "location": "37.1454600000000, -7.5843200000000",
+    "bedrooms": 0,
+    "bathrooms": 1,
+    "size": 35.96,
+    "size_prefix": "sqm",
+    "property_type": [
+        "Apartment"
+    ],
+    "property_status": [
+        "For Sale"
+    ],
+    "property_address": "Cabanas de Tavira, Algarve, Portugal",
+    "property_area": "",
+    "city": "Cabanas de Tavira",
+    "state": "Algarve",
+    "country": "Portugal",
+    "zip_code": "",
+    "latitude": "37.1454600000000",
+    "longitude": "-7.5843200000000",
+    "listing_id": "IDH33560",
+    "agent_id": "150",
+    "agent_display_option": "agent_info",
+    "mls_id": "",
+    "office_name": "",
+    "video_url": "",
+    "virtual_tour": "",
+    "images": [
+        "https://api.idealhomesportugal.com/media/images/1000/93819/12-1-5ea5a4bd-6dd0-4341-9a3e-42be24767080.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/9-1-add25df5-7d3d-427a-aa29-deb93e2b2b87.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/8-1-2ecb83ef-ca7a-497f-b255-87321a4745b2.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/13-1-979440ba-6876-46fd-b6e3-99d1b77e3e13.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/10-1-cc171765-0f14-45e8-b537-f7a13185a6bf.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/6-1-998c15eb-9b0d-4e79-b365-c6765afd6c4d.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/7-1-cf37296a-7094-4679-a86c-daee795985bf.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/8-1-fb2e2712-fc3f-46bf-acc5-6a143430686c.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/1-1-546eecce-cc0c-49ad-b763-7d09f3dde51f.jpg",
+        "https://api.idealhomesportugal.com/media/images/1000/93819/2-1-c62af0bf-8ddf-4273-ac10-751b27c83062.jpg"
+    ],
+    "property_map": "1",
+    "property_year": "",
+    "additional_features": [
+        "Furnished",
+        "Roof terrace",
+        "Walking distance to beach",
+        "Central location",
+        "Terrace",
+        "Double Glazed Windows",
+        "Air conditioning",
+        "Sea Views",
+        "Near Beach"
+    ],
+    "confidential_info": [
+        {
+            "fave_additional_feature_title": "Owned by",
+            "fave_additional_feature_value": "Ideal Homes Portugal"
+        },
+        {
+            "fave_additional_feature_title": "Website",
+            "fave_additional_feature_value": "https://www.idealhomesportugal.com/property/apartment-in-algarve-idh33560-cabanas-de-tavira-93819/93819"
+        },
+        {
+            "fave_additional_feature_title": "Contact Person",
+            "fave_additional_feature_value": "Ideal Homes Portugal"
+        },
+        {
+            "fave_additional_feature_title": "Phone",
+            "fave_additional_feature_value": "+1 800 435 0796"
+        },
+        {
+            "fave_additional_feature_title": "Email",
+            "fave_additional_feature_value": "info@idealhomesportugal.com"
+        }
+    ]
+}
+]
