@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../simple_html_dom.php';
 require_once __DIR__ . '/../Api/ApiSender.php';
+require_once __DIR__ . '/../Helpers/ScraperHelpers.php';
 
 class MarbellaRealtyGroup {
     private string $baseUrl = "https://marbellarealtygroup.com";
@@ -9,17 +10,19 @@ class MarbellaRealtyGroup {
     private ApiSender $apiSender;
     private int $successCreated;
     private int $successUpdated;
+    private ScraperHelpers $helpers;
 
     public function __construct() {
         // Initialize the ApiSender with your actual API URL and token
         $this->apiSender = new ApiSender(true);
+        $this->helpers = new ScraperHelpers();
         $this->successCreated = 0;
         $this->successUpdated = 0;
     }
 
     public function run(int $pageCount = 1, int $limit = 0): void {
         $folder = __DIR__ . '/../ScrapeFile/MarbellaRealtyGroup';
-        $outputFile = $folder . '/ApartmentLtoHStart50k.json';
+        $outputFile = $folder . '/RestoredVersion2.json';
         // $htmlTest =  $folder . '/Test.html';
         // Create the folder if it doesn't exist
         if (!is_dir($folder)) {
@@ -168,16 +171,27 @@ class MarbellaRealtyGroup {
     private function extractPropertyLinks(simple_html_dom $html): void {
         // file_put_contents('test.html', $html);
         // return;
-        foreach ($html->find('.mask.pt-3.bg_color.text-center a') as $a) {
-            $href = $a->href ?? '';
-            if (strpos($href, '/en/property/') !== false) {
-                $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
-                $locationElement = $a->find('.location', 0);
-                $locationText = $locationElement ? trim($locationElement->plaintext) : '';
-                $this->propertyLinks[] = $fullUrl;
-            }
+        // foreach ($html->find('.mask.pt-3.bg_color.text-center a') as $a) {
+        //     $href = $a->href ?? '';
+        //     if (strpos($href, '/en/property/') !== false) {
+        //         $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
+        //         $locationElement = $a->find('.location', 0);
+        //         $locationText = $locationElement ? trim($locationElement->plaintext) : '';
+        //         $this->propertyLinks[] = $fullUrl;
+        //     }
+        // }
+        // $this->propertyLinks = array_unique($this->propertyLinks);
+
+        $result = $this->apiSender->getPropertyLinks("Marbella Realty Group", 5, 2050);
+    
+        if ($result['success']) {
+            $this->propertyLinks = array_unique($result["links"]);
+            echo "🔗 Retrieved " . count($this->propertyLinks) . " property links from API\n";
+        } else {
+            echo "❌ Failed to get property links: " . $result['error'] . "\n";
+            echo "⚠️ Falling back to original scraping method if needed\n";
+            $this->propertyLinks = []; // Initialize as empty array
         }
-        $this->propertyLinks = array_unique($this->propertyLinks);
     }
 
     // Rest of your existing methods remain the same...
@@ -197,7 +211,7 @@ class MarbellaRealtyGroup {
         $descriptionElement = $html->find('.et_pb_tab_content span.descp', 0);
 
         // Initialize description
-        $descriptionHtml = '';
+        $descriptionHtml = ''; 
 
         if ($descriptionElement) {
             $descriptionHtml = '<p>' . $descriptionElement->innertext . '</p>';
@@ -262,6 +276,7 @@ class MarbellaRealtyGroup {
         // Check if price extraction failed or resulted in zero/invalid price
         if (empty($price) || !is_numeric($price) || (int)$price <= 0) {
             echo "❌ Skipping property with invalid price. Extracted value: '$price'\n";
+            $this->helpers->updatePostToDraft($url);
             return; 
         }
 
@@ -288,6 +303,7 @@ class MarbellaRealtyGroup {
 
         if (empty($type_arr)) {
             echo "❌ Skipping property with no property type\n";
+            $this->helpers->updatePostToDraft($url);
             return; // Exit the function without scraping
         }
 
@@ -371,6 +387,7 @@ class MarbellaRealtyGroup {
         // Check if we found any images
         if (empty($images)) {
             echo "❌ Skipping property with no images \n";
+            $this->helpers->updatePostToDraft($url);
             return; // Exit the function without scraping
         }
 
@@ -416,7 +433,6 @@ class MarbellaRealtyGroup {
             "bathrooms" => $bathrooms,
             "size" => $size,
             "size_prefix" => $size_prefix,
-            // "property_type" => [$type],
             "property_type" => $type_arr,
             "property_status" => [$status],
             "property_address" => $details['address'],     

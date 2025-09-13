@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../simple_html_dom.php';
 require_once __DIR__ . '/../Api/ApiSender.php';
+require_once __DIR__ . '/../Helpers/ScraperHelpers.php';
 
 class MResidence {
     private string $baseUrl = "https://mresidence.com/";
@@ -9,17 +10,19 @@ class MResidence {
     private ApiSender $apiSender;
     private int $successCreated;
     private int $successUpdated;
+    private ScraperHelpers $helpers;
 
     public function __construct() {
         // Initialize the ApiSender with your actual API URL and token
         $this->apiSender = new ApiSender(true);
+        $this->helpers = new ScraperHelpers();
         $this->successCreated = 0;
         $this->successUpdated = 0;
     }
 
     public function run(int $pageCount = 1, int $limit = 0): void {
         $folder = __DIR__ . '/../ScrapeFile/MResidence';
-        $outputFile = $folder . '/RestoreVersion.json';
+        $outputFile = $folder . '/RestoreVersion3.json';
         // $htmlTest =  $folder . '/Test.html';
         // Create the folder if it doesn't exist
         if (!is_dir($folder)) {
@@ -239,7 +242,7 @@ class MResidence {
         // echo "🔗 Found " . count($this->propertyLinks) . " property links\n";
 
 
-        $result = $this->apiSender->getPropertyLinks("M. Residence", 0, 100);
+        $result = $this->apiSender->getPropertyLinks("M. Residence", 51, 1730);
     
         if ($result['success']) {
             $this->propertyLinks = array_unique($result["links"]);
@@ -259,7 +262,7 @@ class MResidence {
         $type = "Apartment";
 
         // $coords = $this->extractLatLong($html->find('#gm-canvas-wrap', 0));
-        
+
         // title
         $title = trim($html->find('h1', 0)->plaintext ?? '');
         
@@ -332,6 +335,7 @@ class MResidence {
         // Check if price extraction failed or resulted in zero/invalid price
         if (empty($price) || !is_numeric($price) || (int)$price <= 0) {
             echo "❌ Skipping property with invalid price. Extracted value: '$price'\n";
+            $this->helpers->updatePostToDraft($url);
             return; 
         }
         // In your scrapePropertyDetails method, update the selector:
@@ -348,33 +352,12 @@ class MResidence {
         $status = $details['status'];
         if (empty($status) || !in_array(strtolower($status), array_map('strtolower', $allowedStatuses))) {
             echo "❌ Skipping property with status: $status\n";
+            $this->helpers->updatePostToDraft($url);
             return; 
         } else {
             $details['status'] = 'For Sale';
         }
-        // Extract listing ID
-        $listing_id = '';
-
-        // Method 1: Look for specific paragraph with ref
-        $refElements = $html->find('p');
-        foreach ($refElements as $p) {
-            $text = $p->plaintext ?? '';
-            if (strpos($text, 'Property Ref:') !== false) {
-                // Use regex to extract just the numbers
-                if (preg_match('/Property Ref:\s*#?(\d+)/', $text, $matches)) {
-                    $listing_id = $matches[1];
-                    break;
-                }
-                // Fallback: manual string replacement
-                if (!$listing_id) {
-                    $listing_id = trim(str_replace(['Property Ref:', '#', ' '], '', $text));
-                    // Keep only digits
-                    $listing_id = preg_replace('/[^\d]/', '', $listing_id);
-                }
-                if ($listing_id) break;
-            }
-        }
-
+        
 
         $images = [];
         $jsonScript = $html->find('script[type="application/ld+json"]', 0);
@@ -405,6 +388,28 @@ class MResidence {
             } 
         } 
 
+         // Extract listing ID
+        $listing_id = '';
+
+        // Method 1: Look for specific paragraph with ref
+        $refElements = $html->find('p');
+        foreach ($refElements as $p) {
+            $text = $p->plaintext ?? '';
+            if (strpos($text, 'Property Ref:') !== false) {
+                // Use regex to extract just the numbers
+                if (preg_match('/Property Ref:\s*#?(\d+)/', $text, $matches)) {
+                    $listing_id = $matches[1];
+                    break;
+                }
+                // Fallback: manual string replacement
+                if (!$listing_id) {
+                    $listing_id = trim(str_replace(['Property Ref:', '#', ' '], '', $text));
+                    // Keep only digits
+                    $listing_id = preg_replace('/[^\d]/', '', $listing_id);
+                }
+                if ($listing_id) break;
+            }
+        }
         // Fallback: Look for images in other places if JSON-LD doesn't work
         if (empty($images)) {
             
@@ -427,6 +432,7 @@ class MResidence {
 
         if (count($images) <= 0) {
             echo "❌ Skipping property with no image \n";
+            $this->helpers->updatePostToDraft($url);
             return; 
         }
 

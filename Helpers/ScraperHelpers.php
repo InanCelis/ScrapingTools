@@ -1,8 +1,17 @@
 <?php
 require_once __DIR__ . '/../simple_html_dom.php';
+require_once __DIR__ . '/../Api/ApiSender.php';
+
 
 class ScraperHelpers {
     private string $apiKey = '04c7be9907947f8bdc0867d28854748b';
+    private ApiSender $apiSender;
+
+    public function __construct() {
+        // Initialize the ApiSender with your actual API URL and token
+        $this->apiSender = new ApiSender(true);
+        
+    }
 
     public function getHtml(string $url): ?simple_html_dom {
         $ch = curl_init();
@@ -298,5 +307,83 @@ class ScraperHelpers {
     
     public static function reset() {
         self::$usedIds = [];
+    }
+
+
+    public function updatePostToDraft(string $url): void {
+    
+        // Make HTTP request to get listing_id from URL
+        $apiUrl = "https://internationalpropertyalerts.com/wp-json/houzez/v1/listing-by-url?url=" . urlencode($url);
+        
+        echo "Fetching listing ID for URL: $url\n";
+        
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $apiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            echo "❌ CURL Error: $error\n";
+            return;
+        }
+
+        if ($httpCode !== 200) {
+            echo "❌ API Error: HTTP $httpCode\n";
+            if ($httpCode === 404) {
+                echo "   No property found with URL: $url\n";
+            }
+            return;
+        }
+
+        $data = json_decode($response, true);
+        $listing_id = $data['listing_id'] ?? null;
+
+        if (empty($listing_id)) {
+            echo "❌ Error: No listing ID returned from API\n";
+            echo "   URL: $url\n";
+            return;
+        }
+
+        echo "✅ Found listing ID: $listing_id\n";
+        echo "Updating property to draft status...\n";
+        
+        $result = $this->apiSender->updatePropertyToDraft($listing_id);
+        
+        if ($result['success']) {
+            echo "✅ Success: Property successfully updated to draft status\n";
+            echo "   Listing ID: $listing_id\n";
+            echo "   URL: $url\n";
+            
+            if (isset($result['data']['property_id'])) {
+                echo "   Property ID: " . $result['data']['property_id'] . "\n";
+            }
+            
+            if (isset($result['data']['property_title'])) {
+                echo "   Property Title: " . $result['data']['property_title'] . "\n";
+            }
+            
+            if (isset($result['duration'])) {
+                echo "   Duration: " . $result['duration'] . "s\n";
+            }
+        } else {
+            echo "❌ Error: " . ($result['error'] ?? 'Unknown error occurred') . "\n";
+            echo "   Listing ID: $listing_id\n";
+            echo "   URL: $url\n";
+            
+            if (isset($result['http_code'])) {
+                echo "   HTTP Code: " . $result['http_code'] . "\n";
+            }
+        }
+        
+        echo "\n"; // Add spacing between operations
     }
 }

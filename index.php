@@ -12,7 +12,7 @@ require_once 'vendor/autoload.php';
 ## Ideal Homes Portugal
 // require_once 'Executable/IdealHomePortugal.php';
 // $scraper = new IdealHomePortugal();
-// $scraper->run(1);
+// $scraper->run(3);
 
 #########################################################
 
@@ -60,9 +60,9 @@ require_once 'vendor/autoload.php';
 #########################################################
 
 ## Marbella Realty Group
-// require_once 'Executable/MarbellaRealtyGroup.php';
-// $scraper = new MarbellaRealtyGroup();
-// $scraper->run(2);
+require_once 'Executable/MarbellaRealtyGroup.php';
+$scraper = new MarbellaRealtyGroup();
+$scraper->run();
 
 #########################################################
 
@@ -88,8 +88,21 @@ require_once 'vendor/autoload.php';
 #########################################################
 
 ## Luxury Estate Turkey
-require_once 'Executable/LuxuryEstateTurkey.php';
-$scraper = new LuxuryEstateTurkey();
-$scraper->run();
+// require_once 'Executable/LuxuryEstateTurkey.php';
+// $scraper = new LuxuryEstateTurkey();
+// $scraper->run();
 
 #########################################################
+
+## Bay Side Real Estate
+// require_once 'Executable/BaySideRE.php';
+// $scraper = new BaySideRE();
+// $scraper->run(19);
+
+
+#########################################################
+
+## Buy Properties In Turkey
+// require_once 'Executable/BuyPropertiesInTurkey.php';
+// $scraper = new BuyPropertiesInTurkey();
+// $scraper->run(19);

@@ -3,6 +3,7 @@
 
 class ApiSender {
     private string $apiUrl;
+    private string $draftApiUrl;
     private string $token;
     private int $maxRetries;
     private int $timeout;
@@ -12,7 +13,8 @@ class ApiSender {
     public function __construct(bool $debug = false) {
         $this->apiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/properties';
         $this->linksApiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/links-by-owner';
-        $this->token = 'eyJpYXQiOjE3NTY5NTMwMjcsImV4cCI6MTc1NzAzOTQyN30=';
+        $this->draftApiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/properties';
+        $this->token = 'eyJpYXQiOjE3NTc2NDkxMzEsImV4cCI6MTc1NzczNTUzMX0=';
         $this->maxRetries = 5;            // Increased to 5 retry attempts
         $this->timeout = 120;             // 2 minute timeout for complete operation
         $this->connectTimeout = 30;       // 30 second connection timeout
@@ -101,98 +103,6 @@ class ApiSender {
             'http_code' => $httpCode ?? null
         ];
     }
-
-
-     /**
-     * Get property links from the API for a specific owner
-     * @param string $owner The owner name to search for
-     * @return array Array containing success status and links data
-     */
-    // public function getPropertyLinks(string $owner): array {
-    //     try {
-    //         $this->log("Fetching property links for owner: $owner");
-            
-    //         // Make API request to get property links (no token needed)
-    //         $ch = curl_init();
-    //         curl_setopt_array($ch, [
-    //             CURLOPT_URL => $this->linksApiUrl . '?owner=' . urlencode($owner),
-    //             CURLOPT_RETURNTRANSFER => true,
-    //             CURLOPT_HTTPHEADER => [
-    //                 'Content-Type: application/json'
-    //             ],
-    //             CURLOPT_TIMEOUT => 30,
-    //             CURLOPT_SSL_VERIFYPEER => false,
-    //             CURLOPT_SSL_VERIFYHOST => false
-    //         ]);
-
-    //         $startTime = microtime(true);
-    //         $response = curl_exec($ch);
-    //         $duration = round(microtime(true) - $startTime, 2);
-    //         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    //         $error = curl_error($ch);
-    //         curl_close($ch);
-
-    //         if ($error) {
-    //             $this->log("❌ CURL Error: $error");
-    //             return [
-    //                 'success' => false,
-    //                 'error' => "CURL Error: $error",
-    //                 'links' => [],
-    //                 'count' => 0
-    //             ];
-    //         }
-
-    //         if ($httpCode === 200) {
-    //             $data = json_decode($response, true);
-                
-    //             if ($data && isset($data['links']) && is_array($data['links'])) {
-    //                 $this->log("✅ Retrieved " . count($data['links']) . " property links in {$duration}s");
-    //                 $this->log("📊 API returned {$data['count']} total links for owner: $owner");
-                    
-    //                 return [
-    //                     'success' => true,
-    //                     'links' => $data['links'],
-    //                     'count' => $data['count'],
-    //                     'duration' => $duration
-    //                 ];
-    //             } else {
-    //                 $this->log("❌ API response format unexpected");
-    //                 if ($this->debug) {
-    //                     $this->log("Response: " . substr($response, 0, 200));
-    //                 }
-    //                 return [
-    //                     'success' => false,
-    //                     'error' => 'Invalid API response format',
-    //                     'links' => [],
-    //                     'count' => 0,
-    //                     'raw_response' => $response
-    //                 ];
-    //             }
-    //         } else {
-    //             $this->log("❌ API request failed with HTTP code: $httpCode");
-    //             if ($this->debug) {
-    //                 $this->log("Response: " . substr($response, 0, 200));
-    //             }
-    //             return [
-    //                 'success' => false,
-    //                 'error' => "HTTP $httpCode",
-    //                 'links' => [],
-    //                 'count' => 0,
-    //                 'http_code' => $httpCode,
-    //                 'raw_response' => $response
-    //             ];
-    //         }
-
-    //     } catch (Exception $e) {
-    //         $this->log("❌ Exception while fetching links from API: " . $e->getMessage());
-    //         return [
-    //             'success' => false,
-    //             'error' => $e->getMessage(),
-    //             'links' => [],
-    //             'count' => 0
-    //         ];
-    //     }
-    // }
 
 
     public function getPropertyLinks(string $owner, ?int $start = null, ?int $end = null): array {
@@ -304,6 +214,105 @@ class ApiSender {
             ];
         }
     }
+
+     /**
+     * Update a single property to draft status by listing ID
+     * @param string $listingId The listing ID of the property to update
+     * @return array Array containing success status and response data
+     */
+    public function updatePropertyToDraft(string $listingId): array {
+        try {
+            $this->log("Updating property to draft status. Listing ID: $listingId");
+            
+            $url = $this->draftApiUrl . '/' . urlencode($listingId) . '/draft';
+            
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'PUT',
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $this->token,
+                    'Content-Type: application/json',
+                    'Accept: application/json'
+                ],
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_FAILONERROR => false,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 3
+            ]);
+
+            $startTime = microtime(true);
+            $response = curl_exec($ch);
+            $duration = round(microtime(true) - $startTime, 2);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($error) {
+                $this->log("CURL Error: $error");
+                return [
+                    'success' => false,
+                    'error' => "CURL Error: $error",
+                    'listing_id' => $listingId
+                ];
+            }
+
+            if ($httpCode === 200) {
+                $data = json_decode($response, true);
+                
+                if ($data && isset($data['success']) && $data['success']) {
+                    $this->log("Successfully updated property to draft in {$duration}s");
+                    return [
+                        'success' => true,
+                        'data' => $data,
+                        'listing_id' => $listingId,
+                        'duration' => $duration
+                    ];
+                } else {
+                    $this->log("API returned success=false or unexpected format");
+                    return [
+                        'success' => false,
+                        'error' => $data['message'] ?? 'Unknown API error',
+                        'listing_id' => $listingId,
+                        'raw_response' => $response
+                    ];
+                }
+            } elseif ($httpCode === 404) {
+                $this->log("Property not found (HTTP 404)");
+                return [
+                    'success' => false,
+                    'error' => 'Property not found',
+                    'listing_id' => $listingId,
+                    'http_code' => $httpCode
+                ];
+            } else {
+                $this->log("API request failed with HTTP code: $httpCode");
+                if ($this->debug) {
+                    $this->log("Response: " . substr($response, 0, 500));
+                }
+                return [
+                    'success' => false,
+                    'error' => "HTTP $httpCode",
+                    'listing_id' => $listingId,
+                    'http_code' => $httpCode,
+                    'raw_response' => $response
+                ];
+            }
+
+        } catch (Exception $e) {
+            $this->log("Exception while updating property to draft: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'listing_id' => $listingId
+            ];
+        }
+    }
+
 
     private function log(string $message): void {
         echo "[" . date('Y-m-d H:i:s') . "] $message\n";

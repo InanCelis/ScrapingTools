@@ -6,7 +6,7 @@ require_once __DIR__ . '/../Helpers/ScraperHelpers.php';
 class LuxuryEstateTurkey {
     private string $baseUrl = "https://luxuryestateturkey.com";
     private string $foldername = "LuxuryEstateTurkey";
-    private string $filename = "Restored.json";
+    private string $filename = "Restored2.json";
     private array $propertyLinks = [];
     private array $scrapedData = [];
     private ApiSender $apiSender;
@@ -140,7 +140,7 @@ class LuxuryEstateTurkey {
         // }
         // $this->propertyLinks = array_unique($this->propertyLinks);
 
-        $result = $this->apiSender->getPropertyLinks("Luxury Estate Turkey", 0, 10);
+        $result = $this->apiSender->getPropertyLinks("Luxury Estate Turkey", 0, 1043);
     
         if ($result['success']) {
             $this->propertyLinks = array_unique($result["links"]);

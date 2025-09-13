@@ -12,12 +12,13 @@ class IdealHomePortugal {
     public function __construct() {
         // Initialize the ApiSender with your actual API URL and token
         $this->apiSender = new ApiSender(true);
-        $this->successUpload = 1;
+        $this->successCreated = 0;
+        $this->successUpdated = 0;
     }
 
     public function run(int $pageCount = 1, int $limit = 0): void {
         $folder = __DIR__ . '/../ScrapeFile/IdealHome';
-        $outputFile = $folder . '/Algarve1.json';
+        $outputFile = $folder . '/Lagos.json';
         // $htmlTest =  $folder . '/Test.html';
 
         // Create the folder if it doesn't exist
@@ -32,7 +33,7 @@ class IdealHomePortugal {
         $pages = 0;
         for ($page = 1; $page <= $pageCount; $page++) {0;
             // $url = $this->baseUrl . "/properties/house-type?page={$page}&sort_by=price-desc&web_page=properties";
-            $url = $this->baseUrl . "/property-for-sale/algarve?price_from=250000&price_to=1000000&sort=lowest-price&page={$page}";
+            $url = $this->baseUrl . "/property-for-sale/lagos?location=Lagos&price_from=0&price_to=10000000&page={$page}";
             
             echo "📄 Fetching page $page: $url\n";
 
@@ -51,6 +52,10 @@ class IdealHomePortugal {
             $this->propertyLinks = array_slice($this->propertyLinks, 0, $limit);
         }
         $countLinks = 1;
+        // Get total count of property links
+        $totalLinks = count($this->propertyLinks);
+        echo "📊 Total properties to scrape: {$totalLinks}\n\n";
+
         foreach ($this->propertyLinks as $data) {
             echo "URL ".$countLinks++." 🔍 Scraping: {$data['url']}\n";
             $propertyHtml = file_get_html($data['url']);
@@ -65,9 +70,19 @@ class IdealHomePortugal {
                     $propertyCounter++;
 
                     // Send the property data via the ApiSender
-                    $apiResponse = $this->apiSender->sendProperty($this->scrapedData[0]);
-                    if ($apiResponse['success']) {
-                        echo "✅ Successfully uploaded ".$this->successUpload++. "\n";
+                    $result = $this->apiSender->sendProperty($this->scrapedData[0]);
+                    if ($result['success']) {
+                        echo "✅ Success after {$result['attempts']} attempt(s)\n";
+                        if (count($result['response']['updated_properties']) > 0) {
+                            echo "✅ Updated # " . $this->successUpdated++ . "\n";
+                        } else {
+                            echo "✅ Created # " . $this->successCreated++ . "\n";
+                        }
+                    } else {
+                        echo "❌ Failed after {$result['attempts']} attempts. Last error: {$result['error']}\n";
+                        if ($result['http_code']) {
+                            echo "⚠️ HTTP Status: {$result['http_code']}\n";
+                        }
                     }
                     sleep(1);
                     // echo $jsonEntry;
@@ -77,8 +92,9 @@ class IdealHomePortugal {
 
         // Close the JSON array
         file_put_contents($outputFile, "\n]", FILE_APPEND);
-
         echo "✅ Scraping completed. Output saved to {$outputFile}\n";
+        echo "✅ Properties Created: {$this->successCreated}\n";
+        echo "✅ Properties Updated: {$this->successUpdated}\n";
     }
 
     private function getHtml(string $url): ?simple_html_dom {
@@ -130,7 +146,7 @@ class IdealHomePortugal {
         $status = $propertyListing['saleFlag'];
 
         // List of allowed property types (case insensitive)
-        $allowedTypes = ['Townhouse', 'Villa', 'Apartment'];
+        $allowedTypes = ['Townhouse', 'Villa', 'Apartment', 'Penthouse'];
         $allowedStatuses = ['Available', 'Recently_Reduced'];
         
         // Check if property type is allowed (case insensitive comparison)
@@ -163,6 +179,12 @@ class IdealHomePortugal {
 
         // price
         $price = $propertyListing['price'] ?? '';
+
+        // Check if price extraction failed or resulted in zero/invalid price
+        if (empty($price) || !is_numeric($price) || (int)$price <= 0) {
+            echo "❌ Skipping property with invalid price. Extracted value: '$price'\n";
+            return; 
+        }
         //bedroom
         $bedroom = isset($propertyListing['beds']) ? (int)$propertyListing['beds'] : 0;
 

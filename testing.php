@@ -16,6 +16,6 @@
 #########################################################
 
 ## Luxury Estate Turkey
-require_once 'Executable/LuxuryEstateTurkey.php';
-$scraper = new LuxuryEstateTurkey();
-$scraper->run();
+// require_once 'Executable/LuxuryEstateTurkey.php';
+// $scraper = new LuxuryEstateTurkey();
+// $scraper->run();
