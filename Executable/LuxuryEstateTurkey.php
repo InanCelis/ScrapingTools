@@ -41,7 +41,7 @@ class LuxuryEstateTurkey {
         file_put_contents($outputFile, "[");
 
         $propertyCounter = 0;
-        for ($page = 0; $page <= $pageCount; $page++) {
+        for ($page = 1; $page <= $pageCount; $page++) {
             $url = $this->baseUrl . "/en/real-estate/turkey?building_type%5B0%5D=1&building_type%5B1%5D=3&building_type%5B2%5D=4&building_type%5B3%5D=7&building_type%5B4%5D=8&building_type%5B5%5D=9&order=from_expensive_to_cheap&p={$page}";
             
             echo "📄 Fetching page $page: $url\n";
@@ -61,6 +61,10 @@ class LuxuryEstateTurkey {
             $this->propertyLinks = array_slice($this->propertyLinks, 0, $limit);
         }
         $countLinks = 1;
+
+        // Get total count of property links
+        $totalLinks = count($this->propertyLinks);
+        echo "📊 Total properties to scrape: {$totalLinks}\n\n";
         foreach ($this->propertyLinks as $url) {
             echo "URL ".$countLinks++." 🔍 Scraping: $url\n";
             $propertyHtml = file_get_html($url);
@@ -129,27 +133,27 @@ class LuxuryEstateTurkey {
             // return;
         }
 
-        // foreach ($html->find('.card.bg-transparent.border-0 .row .col-lg-12 a.h3.fs-3') as $a) {
-        //     $href = $a->href ?? '';
-        //     if (strpos($href, '/en/real-estate/') !== false) {
-        //         $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
-        //         $locationElement = $a->find('.h3.fs-3', 0);
-        //         $locationText = $locationElement ? trim($locationElement->plaintext) : '';
-        //         $this->propertyLinks[] = $fullUrl;
-        //     }
-        // }
-        // $this->propertyLinks = array_unique($this->propertyLinks);
-
-        $result = $this->apiSender->getPropertyLinks("Luxury Estate Turkey", 0, 1043);
-    
-        if ($result['success']) {
-            $this->propertyLinks = array_unique($result["links"]);
-            echo "🔗 Retrieved " . count($this->propertyLinks) . " property links from API\n";
-        } else {
-            echo "❌ Failed to get property links: " . $result['error'] . "\n";
-            echo "⚠️ Falling back to original scraping method if needed\n";
-            $this->propertyLinks = []; // Initialize as empty array
+        foreach ($html->find('.card.bg-transparent.border-0 .row .col-lg-12 a.h3.fs-3') as $a) {
+            $href = $a->href ?? '';
+            if (strpos($href, '/en/real-estate/') !== false) {
+                $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
+                $locationElement = $a->find('.h3.fs-3', 0);
+                $locationText = $locationElement ? trim($locationElement->plaintext) : '';
+                $this->propertyLinks[] = $fullUrl;
+            }
         }
+        $this->propertyLinks = array_unique($this->propertyLinks);
+
+        // $result = $this->apiSender->getPropertyLinks("Luxury Estate Turkey", 0, 1043);
+    
+        // if ($result['success']) {
+        //     $this->propertyLinks = array_unique($result["links"]);
+        //     echo "🔗 Retrieved " . count($this->propertyLinks) . " property links from API\n";
+        // } else {
+        //     echo "❌ Failed to get property links: " . $result['error'] . "\n";
+        //     echo "⚠️ Falling back to original scraping method if needed\n";
+        //     $this->propertyLinks = []; // Initialize as empty array
+        // }
     }
 
    
@@ -166,6 +170,7 @@ class LuxuryEstateTurkey {
         $title = trim($html->find('h1.py-4', 0)->plaintext ?? '');
         if(empty($title)) {
             echo "❌ Skipping property with invalid setup of html\n ";
+            $this->helpers->updatePostToDraft($url);
             return; 
         }
 
@@ -248,6 +253,7 @@ class LuxuryEstateTurkey {
              // Check if property type is allowed (case insensitive comparison)
             if (!in_array(strtolower($type_extracted), array_map('strtolower', $allowedTypes))) {
                 echo "❌ Skipping property of type: $type_extracted\n";
+                $this->helpers->updatePostToDraft($url);
                 return; // Exit the function without scraping
             }
 
@@ -268,6 +274,7 @@ class LuxuryEstateTurkey {
 
         if (empty($property_type)) {
             echo "❌ Skipping property with no property type\n";
+            $this->helpers->updatePostToDraft($url);
             return; // Exit the function without scraping
         }
 
@@ -404,6 +411,7 @@ class LuxuryEstateTurkey {
         // Check if we found any images
         if (empty($images)) {
             echo "❌ Skipping property with no images \n";
+            $this->helpers->updatePostToDraft($url);
             return; // Exit the function without scraping
         }
 

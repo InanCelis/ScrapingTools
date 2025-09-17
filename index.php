@@ -60,9 +60,9 @@ require_once 'vendor/autoload.php';
 #########################################################
 
 ## Marbella Realty Group
-require_once 'Executable/MarbellaRealtyGroup.php';
-$scraper = new MarbellaRealtyGroup();
-$scraper->run();
+// require_once 'Executable/MarbellaRealtyGroup.php';
+// $scraper = new MarbellaRealtyGroup();
+// $scraper->run();
 
 #########################################################
 
@@ -88,9 +88,9 @@ $scraper->run();
 #########################################################
 
 ## Luxury Estate Turkey
-// require_once 'Executable/LuxuryEstateTurkey.php';
-// $scraper = new LuxuryEstateTurkey();
-// $scraper->run();
+require_once 'Executable/LuxuryEstateTurkey.php';
+$scraper = new LuxuryEstateTurkey();
+$scraper->run(5);
 
 #########################################################
 
@@ -106,3 +106,10 @@ $scraper->run();
 // require_once 'Executable/BuyPropertiesInTurkey.php';
 // $scraper = new BuyPropertiesInTurkey();
 // $scraper->run(19);
+
+
+## Ideal Homes Portugal
+// require_once 'Executable/IdealHomeInternational.php';
+// $scraper = new IdealHomeInternational();
+// $scraper->run(119);
+

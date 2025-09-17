@@ -14,10 +14,10 @@ class ApiSender {
         $this->apiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/properties';
         $this->linksApiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/links-by-owner';
         $this->draftApiUrl = 'https://internationalpropertyalerts.com/wp-json/houzez/v1/properties';
-        $this->token = 'eyJpYXQiOjE3NTc2NDkxMzEsImV4cCI6MTc1NzczNTUzMX0=';
-        $this->maxRetries = 5;            // Increased to 5 retry attempts
-        $this->timeout = 120;             // 2 minute timeout for complete operation
-        $this->connectTimeout = 30;       // 30 second connection timeout
+        $this->token = 'eyJpYXQiOjE3NTgwMDY0NjAsImV4cCI6MTc1ODA5Mjg2MH0=';
+        $this->maxRetries = 3;            // Increased to 5 retry attempts
+        $this->timeout = 600;             // 2 minute timeout for complete operation
+        $this->connectTimeout = 60;       // 30 second connection timeout
         $this->debug = $debug;
     }
 

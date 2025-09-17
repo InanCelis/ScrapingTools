@@ -19,3 +19,10 @@
 // require_once 'Executable/LuxuryEstateTurkey.php';
 // $scraper = new LuxuryEstateTurkey();
 // $scraper->run();
+
+#########################################################
+
+## Marbella Realty Group
+require_once 'Executable/MarbellaRealtyGroup.php';
+$scraper = new MarbellaRealtyGroup();
+$scraper->run();

@@ -34,7 +34,8 @@ class MarbellaRealtyGroup {
 
         $propertyCounter = 0;
         for ($page = 1; $page <= $pageCount; $page++) {
-            $url = $this->baseUrl . "/property-for-sale/?il_page={$page}&listing_type=resale&type%5B0%5D=1&type%5B1%5D=7&type%5B2%5D=2&type%5B3%5D=8&type%5B4%5D=3&type%5B5%5D=5&type%5B6%5D=6&type%5B7%5D=4&bedrooms_min&bathrooms_min&list_price_min=50000&list_price_max=150000&ref_no&order=list_price_asc";
+            // $url = $this->baseUrl . "/property-for-sale/?il_page={$page}&listing_type=resale&type%5B0%5D=1&type%5B1%5D=7&type%5B2%5D=2&type%5B3%5D=8&type%5B4%5D=3&type%5B5%5D=5&type%5B6%5D=6&type%5B7%5D=4&bedrooms_min&bathrooms_min&list_price_min=50000&list_price_max=150000&ref_no&order=list_price_asc";
+            $url = $this->baseUrl . "/property-for-sale/?il_page={$page}&listing_type=resale&type%5B%5D=1&type%5B%5D=7&type%5B%5D=2&type%5B%5D=8&type%5B%5D=3&type%5B%5D=5&type%5B%5D=6&type%5B%5D=4&bedrooms_min=&bathrooms_min=&list_price_min=50000&list_price_max=10000000&ref_no=&order=list_price_desc";
             
             echo "📄 Fetching page $page: $url\n";
 
@@ -57,6 +58,9 @@ class MarbellaRealtyGroup {
         }
         
         $countLinks = 1;
+        // Get total count of property links
+        $totalLinks = count($this->propertyLinks);
+        echo "📊 Total properties to scrape: {$totalLinks}\n\n";
         foreach ($this->propertyLinks as $url) {
             echo "URL ".$countLinks++." 🔍 Scraping: $url\n";
             
@@ -171,27 +175,27 @@ class MarbellaRealtyGroup {
     private function extractPropertyLinks(simple_html_dom $html): void {
         // file_put_contents('test.html', $html);
         // return;
-        // foreach ($html->find('.mask.pt-3.bg_color.text-center a') as $a) {
-        //     $href = $a->href ?? '';
-        //     if (strpos($href, '/en/property/') !== false) {
-        //         $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
-        //         $locationElement = $a->find('.location', 0);
-        //         $locationText = $locationElement ? trim($locationElement->plaintext) : '';
-        //         $this->propertyLinks[] = $fullUrl;
-        //     }
-        // }
-        // $this->propertyLinks = array_unique($this->propertyLinks);
-
-        $result = $this->apiSender->getPropertyLinks("Marbella Realty Group", 5, 2050);
-    
-        if ($result['success']) {
-            $this->propertyLinks = array_unique($result["links"]);
-            echo "🔗 Retrieved " . count($this->propertyLinks) . " property links from API\n";
-        } else {
-            echo "❌ Failed to get property links: " . $result['error'] . "\n";
-            echo "⚠️ Falling back to original scraping method if needed\n";
-            $this->propertyLinks = []; // Initialize as empty array
+        foreach ($html->find('.mask.pt-3.bg_color.text-center a') as $a) {
+            $href = $a->href ?? '';
+            if (strpos($href, '/en/property/') !== false) {
+                $fullUrl = strpos($href, 'http') === 0 ? $href : $this->baseUrl . $href;
+                $locationElement = $a->find('.location', 0);
+                $locationText = $locationElement ? trim($locationElement->plaintext) : '';
+                $this->propertyLinks[] = $fullUrl;
+            }
         }
+        $this->propertyLinks = array_unique($this->propertyLinks);
+
+        // $result = $this->apiSender->getPropertyLinks("Marbella Realty Group", 178, 2050);
+    
+        // if ($result['success']) {
+        //     $this->propertyLinks = array_unique($result["links"]);
+        //     echo "🔗 Retrieved " . count($this->propertyLinks) . " property links from API\n";
+        // } else {
+        //     echo "❌ Failed to get property links: " . $result['error'] . "\n";
+        //     echo "⚠️ Falling back to original scraping method if needed\n";
+        //     $this->propertyLinks = []; // Initialize as empty array
+        // }
     }
 
     // Rest of your existing methods remain the same...
@@ -420,6 +424,9 @@ class MarbellaRealtyGroup {
                 }
             }
         }
+
+        $address_data = $this->helpers->getLocationDataByCoords($coords['latitude'], $coords['longitude']) ?? [];
+
         $this->scrapedData[] = [
             "property_title" => $title,
             "property_description" => $this->translateHtmlPreservingTags($descriptionHtml),
@@ -435,12 +442,19 @@ class MarbellaRealtyGroup {
             "size_prefix" => $size_prefix,
             "property_type" => $type_arr,
             "property_status" => [$status],
-            "property_address" => $details['address'],     
-            "property_area" => $details['location'],        
-            "city" => '',                 
-            "state" => $details['area'],                    
-            "country" => $details['country'], 
-            "zip_code" => "",
+            // "property_address" => $details['address'],     
+            // "property_area" => $details['location'],        
+            // "city" => '',                 
+            // "state" => $details['area'],                    
+            // "country" => $details['country'], 
+            // "zip_code" => "",
+            "property_address" => $address_data['address'],
+            "property_area" => "",
+            "city" => $address_data['city'],
+            "state" => $address_data['state'],
+            "country" => $address_data['country'],
+            "zip_code" => $address_data['postal_code'],
+
             "latitude" => $coords['latitude'],
             "longitude" => $coords['longitude'],
             "listing_id" => 'MRG_'.$listing_id,

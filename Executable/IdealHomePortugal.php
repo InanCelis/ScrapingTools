@@ -33,7 +33,7 @@ class IdealHomePortugal {
         $pages = 0;
         for ($page = 1; $page <= $pageCount; $page++) {0;
             // $url = $this->baseUrl . "/properties/house-type?page={$page}&sort_by=price-desc&web_page=properties";
-            $url = $this->baseUrl . "/property-for-sale/lagos?location=Lagos&price_from=0&price_to=10000000&page={$page}";
+            $url = $this->baseUrl . "/property-for-sale/albufeira?location=Albufeira&price_from=0&price_to=1000000&sort=lowest-price&page={$page}";
             
             echo "📄 Fetching page $page: $url\n";
 
